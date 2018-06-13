@@ -12,7 +12,7 @@ def playground_index():
     return 'Hello, here is index of playground.'
 
 
-@playground.route('/1d_curves/')
+@playground.route('/1d_curves')
 def one_dimension_analysis():
     return 'Hello, here is 1D curves.'
 

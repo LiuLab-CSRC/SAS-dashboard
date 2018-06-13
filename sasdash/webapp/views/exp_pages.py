@@ -89,8 +89,8 @@ def experiment_settings():
     )
 
 
-@exp_pages.route('/exp_pages/')
-@exp_pages.route('/exp_cards/')
+@exp_pages.route('/exp_pages')
+@exp_pages.route('/exp_cards')
 def show_exp_cards():
     if isinstance(ROOT_PATH, str):
         setup_files = glob.glob(os.path.join(ROOT_PATH, '*', 'setup.yml'))
@@ -110,7 +110,7 @@ def show_exp_cards():
     )
 
 
-@exp_pages.route('/exp_pages/<string:exp_name>/', methods=('GET', 'POST'))
+@exp_pages.route('/exp_pages/<string:exp_name>', methods=('GET', 'POST'))
 def individual_experiment_page(exp_name: str):
     exp_dir_glob = glob.glob(os.path.join(ROOT_PATH, exp_name))
     if not exp_dir_glob:
@@ -199,7 +199,7 @@ SUBFOLDER = {
 
 
 @exp_pages.route(
-    '/download_files/<string:graph_type>/<string:exp_name>/', methods=['GET'])
+    '/download_files/<string:graph_type>/<string:exp_name>', methods=['GET'])
 def download_files(graph_type, exp_name):
     directory = os.path.join(ROOT_PATH, exp_name)
     filename = os.path.join(directory, '%s_%s.zip' % (exp_name, graph_type))
