@@ -1,0 +1,18 @@
+# basic
+numpy
+scipy
+# matplotlib
+
+# web
+ruamel.yaml
+flask
+flask-bootstrap
+flask-wtf
+
+# dashboard
+pillow
+dash
+dash-renderer
+dash-html-components
+dash-core-components
+plotly
