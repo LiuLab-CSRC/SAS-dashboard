@@ -1,4 +1,11 @@
+import os
+import glob
+import uuid
+
 from flask import Blueprint
+from flask import render_template, redirect, url_for
+
+from ..forms import LayoutConfigCheckbox, LocalFilePattern
 
 playground = Blueprint(
     'playground',
@@ -9,19 +16,47 @@ playground = Blueprint(
 
 @playground.route('/')
 def playground_index():
-    return 'Hello, here is index of playground.'
+    return render_template('playground.html')
 
 
-@playground.route('/1d_curves')
-def one_dimension_analysis():
-    return 'Hello, here is 1D curves.'
+@playground.route('/1d_profile', defaults={'UUID': None})
+@playground.route('/1d_profile/<string:UUID>', methods=('GET', 'POST'))
+def profile_analysis(UUID=None):
+    if UUID is None:
+        new_dirname = uuid.uuid4().hex
+        return redirect(url_for('playground.profile_analysis', UUID=new_dirname))
+    else:
+        # TODO: check exist
+        pass
+    filepattern_input = LocalFilePattern()
+    layouts_checkbox = LayoutConfigCheckbox({})
+
+    if filepattern_input.validate_on_submit():
+        p = filepattern_input.filepattern.data
+        files = sorted(glob.glob(p))
+    else:
+        files = []
+    files = [os.path.split(f)[-1] for f in files]
+    return render_template(
+        '1d_profile.html',
+        filepattern_input=filepattern_input,
+        files=enumerate(files),
+        layouts_checkbox=layouts_checkbox,
+    )
 
 
-@playground.route('/2d_map')
-def images_analysis():
+@playground.route('/2d_image')
+def image_analysis():
     return 'Hello, here is 2D images.'
 
 
-@playground.route('/3d_density')
-def density_analysis():
-    return 'Hello, here is 3D density.'
+@playground.route('/3d_density', defaults={'UUID': None})
+@playground.route('/3d_density/<string:UUID>')
+def density_analysis(UUID=None):
+    if UUID is None:
+        new_dirname = uuid.uuid4().hex
+        return redirect(url_for('playground.density_analysis', UUID=new_dirname))
+    else:
+        # TODO: check exist
+        pass
+    return render_template('3d_density.html')
