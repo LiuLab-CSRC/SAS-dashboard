@@ -12,7 +12,8 @@ from .style import XLABEL, YLABEL, TITLE, LINE_STYLE
 from .style import ERRORBAR_OPTIONS
 from .style import INLINE_LABEL_STYLE, GRAPH_GLOBAL_CONFIG
 from ..base import dash_app
-from ..datamodel import raw_simulator
+
+# from ..datamodel import raw_simulator
 
 # axis scale for (yaxis, xaxis)
 # _LIN_LIN = ['linear', 'linear']
@@ -112,7 +113,8 @@ _DEFAULT_LAYOUT = html.Div(children=[
         labelStyle=INLINE_LABEL_STYLE,
     ),
     html.Label(
-        "Show error bar (Always be false with Guinier, Kratky and Porod plot.)"),
+        "Show error bar (Always be false with Guinier, Kratky and Porod plot.)"
+    ),
     dcc.RadioItems(
         id='sasprofile-errorbar',
         options=ERRORBAR_OPTIONS,

@@ -10,7 +10,7 @@ from dash.dependencies import Input, Output, State
 from .style import XLABEL, YLABEL, TITLE, INLINE_LABEL_STYLE
 from .style import GRAPH_GLOBAL_CONFIG
 from ..base import dash_app
-from ..datamodel import raw_simulator
+# from ..datamodel import raw_simulator
 
 _PLOT_OPTIONS = [{
     'label': 'P(r) distribution',

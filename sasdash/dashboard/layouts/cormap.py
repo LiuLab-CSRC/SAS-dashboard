@@ -8,7 +8,7 @@ from dash.dependencies import Input, Output
 
 from .style import GRAPH_GLOBAL_CONFIG, INLINE_LABEL_STYLE
 from ..base import dash_app
-from ..datamodel import raw_simulator
+# from ..datamodel import raw_simulator
 
 _PLOT_OPTIONS = [{
     'label': 'Adj Pr(>C) value',

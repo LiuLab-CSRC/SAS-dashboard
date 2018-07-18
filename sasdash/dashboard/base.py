@@ -4,8 +4,9 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 
-from webapp.app import flask_app, DASH_URL_BASE
+from sasdash.webapp.app import flask_app
 
+DASH_URL_BASE = '/dashboard'
 dash_app = dash.Dash(
     __name__, server=flask_app, url_base_pathname=DASH_URL_BASE)
 # flask_app = dash_app.server

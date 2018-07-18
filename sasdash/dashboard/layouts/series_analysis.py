@@ -11,7 +11,8 @@ from .style import XLABEL, YLABEL, TITLE, LINE_STYLE
 from .style import AXIS_OPTIONS
 from .style import INLINE_LABEL_STYLE, GRAPH_GLOBAL_CONFIG
 from ..base import dash_app
-from ..datamodel import raw_simulator
+
+# from ..datamodel import raw_simulator
 
 _DIFF_OPTIONS = [{
     'label': 'Relative difference',

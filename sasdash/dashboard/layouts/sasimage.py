@@ -7,9 +7,11 @@ from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
 import dash_html_components as html
 
+from sasdash.saslib.image import subtract_radial_average
+
 from .style import GRAPH_GLOBAL_CONFIG, INLINE_LABEL_STYLE
 from ..base import dash_app
-from ..datamodel import raw_simulator
+# from ..datamodel import raw_simulator
 
 _PLOT_OPTIONS = [{
     'label': 'Heatmap',
@@ -17,6 +19,9 @@ _PLOT_OPTIONS = [{
 }, {
     'label': 'Contour',
     'value': 'contour'
+}, {
+    'label': 'Average-subtracted',
+    'value': 'subtraction',
 }]
 
 _CIRCLE_OPTIONS = [{
@@ -31,6 +36,9 @@ _DEFAULT_FIGURE_LAYOUT = {
     'xaxis': dict(title='pixel', scaleanchor='y', constrain='domain'),
     'yaxis': dict(title='pixel', autorange='reversed'),
 }
+
+# TODO: set center in (x, y)<->(col, row) instead of (row, col)
+center = None
 
 
 def _six_columns(suffix: str):
@@ -96,12 +104,7 @@ _DEFAULT_LAYOUT = html.Div(children=[
     ),
     html.Label('Radius of circle'),
     dcc.Slider(
-        id='sasimage-circle-radius-slider',
-        min=0,
-        max=150,
-        step=1,
-        value=30,
-    ),
+        id='sasimage-circle-radius-slider', min=0, max=150, step=1, value=30),
 ])
 
 
@@ -217,6 +220,16 @@ def _update_image(
         figure_layout = circle_layout
     else:
         figure_layout = _DEFAULT_FIGURE_LAYOUT
+
+    if plot_type == 'subtraction':
+        plot_type = 'heatmap'
+        # center of (row, col)
+        rc_center = (center[1], center[0])
+        mask = raw_simulator.boxed_mask
+        # subtract_average_image
+        image = subtract_radial_average(image, rc_center, mask)
+        colorbar_range[0] = image.min()
+        colorbar_range[1] = image.max()
 
     return {
         'data': [{
