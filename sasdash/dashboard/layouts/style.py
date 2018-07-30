@@ -1,5 +1,3 @@
-from __future__ import print_function, division
-
 INLINE_LABEL_STYLE = {
     'display': 'inline-block',
 }

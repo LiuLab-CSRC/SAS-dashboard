@@ -1,2 +1,0 @@
-CSRF_ENABLED = True
-DEBUG = True

@@ -5,21 +5,14 @@ import json
 from numpy import log2, log10
 import dash_core_components as dcc
 import dash_html_components as html
-from dash_html_components import Th, Tr, Td
 from dash.dependencies import Input, Output, State
+
+from sasdash.datamodel import warehouse
 
 from .style import XLABEL, YLABEL, TITLE, LINE_STYLE
 from .style import ERRORBAR_OPTIONS
 from .style import INLINE_LABEL_STYLE, GRAPH_GLOBAL_CONFIG
 from ..base import dash_app
-
-# from ..datamodel import raw_simulator
-
-# axis scale for (yaxis, xaxis)
-# _LIN_LIN = ['linear', 'linear']
-# _LOG_LIN = ['log', 'linear']
-# _LOG_LOG = ['log', 'log']
-# _LIN_LOG = ['linear', 'log']
 
 # axis scale for (yaxis, xaxis)
 _LIN_LIN = 'linear-linear'
@@ -74,22 +67,22 @@ _CALC_FUNCTION = {
 
 _line_style_table = html.Table(children=[
     html.Thead([
-        Th('Curves'),
-        Th('Marker'),
-        Th('Linestyle'),
-        Th('Removed'),
+        html.Th('Curves'),
+        html.Th('Marker'),
+        html.Th('Linestyle'),
+        html.Th('Removed'),
     ]),
-    Tr([
-        Td('curve 1'),
-        Td('2'),
-        Td('3'),
-        Td('4'),
+    html.Tr([
+        html.Td('curve 1'),
+        html.Td('2'),
+        html.Td('3'),
+        html.Td('4'),
     ]),
-    Tr([
-        Td('curve 2'),
-        Td('6'),
-        Td('7'),
-        Td('8'),
+    html.Tr([
+        html.Td('curve 2'),
+        html.Td('6'),
+        html.Td('7'),
+        html.Td('8'),
     ]),
 ])
 
@@ -142,11 +135,11 @@ _DEFAULT_LAYOUT = html.Div(children=[
 ])
 
 
-def get_sasprofile(exp):
+def get_sasprofile():
     return _DEFAULT_LAYOUT
 
 
-def _get_figure(exp, plot_type, errorbar_visible, xlim=None):
+def _get_figure(info, plot_type, errorbar_visible, xlim=None):
     profile_name = plot_type if '-' not in plot_type else 'sasprofile'
 
     if profile_name == 'sasprofile':
@@ -173,7 +166,9 @@ def _get_figure(exp, plot_type, errorbar_visible, xlim=None):
     if xlim:
         xaxis['range'] = xlim
 
-    sasm_list = raw_simulator.get_sasprofile(exp)
+    experiment = info['experiment']
+    run = info['run']
+    sasm_list = warehouse.get_sasprofile(experiment, run)
 
     data = [{
         'x': _CALC_FUNCTION[profile_name]['q'](each_sasm.q),
@@ -185,7 +180,7 @@ def _get_figure(exp, plot_type, errorbar_visible, xlim=None):
         },
         'type': 'line',
         'line': LINE_STYLE,
-        'name': each_sasm.getParameter('filename'),
+        'name': each_sasm.get_parameter('filename'),
     } for each_sasm in sasm_list]
 
     return {
@@ -212,7 +207,6 @@ def _get_figure(exp, plot_type, errorbar_visible, xlim=None):
 #         if xaxis == 'log':
 #             return log10(_XLIM_MAX)
 
-
 # @dash_app.callback(
 #     Output('sasprofile-xlim', 'min'), [
 #         Input('sasprofile-plot-type', 'value'),
@@ -224,7 +218,6 @@ def _get_figure(exp, plot_type, errorbar_visible, xlim=None):
 #         _, xaxis = plot_type.split('-')
 #         if xaxis == 'log':
 #             return log10(1e-3)
-
 
 # @dash_app.callback(
 #     Output('sasprofile-xlim', 'step'), [
@@ -239,7 +232,6 @@ def _get_figure(exp, plot_type, errorbar_visible, xlim=None):
 #     print('step:', (curr_max - curr_min) / 200.0)
 #     print('step:', (curr_max - curr_min) / 200.0)
 #     return (curr_max - curr_min) / _SLIDER_POINTS
-
 
 # @dash_app.callback(
 #     Output('sasprofile-xlim', 'value'), [
@@ -273,5 +265,4 @@ def _get_figure(exp, plot_type, errorbar_visible, xlim=None):
 )
 def _update_graph(plot_type, errorbar_visible, curr_xlim, info_json):
     info_dict = json.loads(info_json)
-    exp = info_dict['exp']
-    return _get_figure(exp, plot_type, errorbar_visible, curr_xlim)
+    return _get_figure(info_dict, plot_type, errorbar_visible, curr_xlim)

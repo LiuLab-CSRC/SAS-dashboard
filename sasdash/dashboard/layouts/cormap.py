@@ -8,7 +8,8 @@ from dash.dependencies import Input, Output
 
 from .style import GRAPH_GLOBAL_CONFIG, INLINE_LABEL_STYLE
 from ..base import dash_app
-# from ..datamodel import raw_simulator
+
+from sasdash.datamodel import warehouse
 
 _PLOT_OPTIONS = [{
     'label': 'Adj Pr(>C) value',
@@ -34,7 +35,7 @@ _DEFAULT_LAYOUT = html.Div(children=[
 ])
 
 
-def get_cormap(exp):
+def get_cormap():
     return _DEFAULT_LAYOUT
 
 
@@ -55,8 +56,9 @@ _DEFAULT_FIGURE_LAYOUT = {
     ],
 )
 def _update_figure(plot_type, info_json):
-    exp = json.loads(info_json)['exp']
-    cormap_heatmap = raw_simulator.get_cormap_heatmap(exp, plot_type)
+    info = json.loads(info_json)
+    info_tuple = info['project'], info['experiment'], info['run']
+    cormap_heatmap = warehouse.get_cormap_heatmap(*info_tuple, plot_type)
 
     if plot_type == 'C':
         colorscale = 'Jet'

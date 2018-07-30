@@ -11,7 +11,7 @@ from ..base import dash_app
 from .style import GRAPH_GLOBAL_CONFIG, INLINE_LABEL_STYLE
 from .style import YLABEL, LINE_STYLE
 
-# from ..datamodel import raw_simulator
+from sasdash.datamodel import warehouse
 
 _PLOT_OPTIONS = [{
     'label': 'Profile colormap',
@@ -67,15 +67,15 @@ _DEFAULT_LAYOUT = html.Div(children=[
 ])
 
 
-def get_colormap(exp):
+def get_colormap():
     return _DEFAULT_LAYOUT
 
 
-def _get_figure(exp, plot_type, profile_type, q_idx):
-    sasm_list = raw_simulator.get_sasprofile(exp)
+def _get_figure(info, plot_type, profile_type, q_idx):
+    project, experiment, run = info['project'], info['experiment'], info['run']
+    sasm_list = warehouse.get_sasprofile(project, experiment, run)
 
     # TODO: Fix length of q vector. Use new SASM method.
-
     if plot_type == 'colormap':
         if profile_type == 'intensity':
             image = [each.i[0:100] for each in sasm_list]

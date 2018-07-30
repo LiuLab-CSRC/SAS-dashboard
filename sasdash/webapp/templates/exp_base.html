@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
 
-{% block title %}{{ exp_name }}{% endblock %}
+{% block title %}{{ run }}{% endblock %}
 
 {% block page_content %}
   {{ super() }}
@@ -10,14 +10,14 @@
       <!-- experiment header -->
       <div class="page-header">
         <h1>
-          {{ exp_name }}
+          {{ run }}
           <small>notes</small>
         </h1>
       </div>
 
       <!-- experiment information and setup -->
       <h4 id="setup">Setup</h4>
-      {{ wtf.quick_form(exp_setup_form, form_type='horizontal', horizontal_columns=('sm', 3, 9), id='setup-form') }}
+      {{ wtf.quick_form(setup_form, form_type='horizontal', horizontal_columns=('sm', 3, 9), id='setup-form') }}
       <hr>
       <h4 id="configuration">Configuration</h4>
       {{ wtf.quick_form(layouts_checkbox, form_type='horizontal', id=False) }} <!-- form_type='inline' -->
@@ -36,7 +36,7 @@
             <h4 id="{{ dp.graph_type }}">
               {{ dp.graph_name }}
               <small>
-                <a target="_blank" href="{{ url_for('exp_pages.download_files', graph_type=dp.graph_type, exp_name=exp_name) }}">
+                <a target="_blank" href="{{ url_for('exp_pages.download_files', project=project, experiment=experiment, run=run, graph_type=dp.graph_type) }}">
                   dwonload
                 </a>raw data
               </small>
@@ -45,7 +45,7 @@
             <h4 id="{{ dp.graph_type }}">{{ dp.graph_name }}</h4>
           {%- endif %}
           <div class="dash-embed-responsive">
-            <iframe class="dash-embed-responsive-item" src="{{ url_for('/dashboard', exp=exp_name, graph_type=dp.graph_type) }}">
+            <iframe class="dash-embed-responsive-item" src="{{ url_for('/dashboard', project=project, experiment=experiment, run=run, graph_type=dp.graph_type) }}">
             </iframe>
           </div>
         {%- endfor %}
@@ -69,19 +69,20 @@
         </ul>
         <hr>
         <ul class="nav" role="navigation">
-          {% if exp_id != 1 %}
+          {% if prev_run != None -%}
             <li class="previous">
-              <a href="{{ url_for('exp_pages.individual_experiment_page', exp_name=prev_exp_name ) }}">
+              <a href="{{ url_for('exp_pages.individual_page', project=project, experiment=experiment, run=prev_run) }}">
                 Previous experiment
               </a>
             </li>
-          {% endif %}
-          <!-- TODO: Add last experiment criterion -->
-          <li class="next">
-            <a href="{{ url_for('exp_pages.individual_experiment_page', exp_name=next_exp_name ) }}">
-              Next experiment
-            </a>
-          </li>
+          {%- endif %}
+          {% if next_run != None -%}
+            <li class="next">
+              <a href="{{ url_for('exp_pages.individual_page', project=project, experiment=experiment, run=next_run) }}">
+                Next experiment
+              </a>
+            </li>
+          {%- endif %}
         </ul>
       </nav>
     </div>

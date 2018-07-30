@@ -11,10 +11,11 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 
+from sasdash.datamodel import warehouse
+
 from .style import XLABEL, YLABEL, TITLE, LINE_STYLE
 from .style import GRAPH_GLOBAL_CONFIG
 from ..base import dash_app
-# from ..datamodel import raw_simulator
 
 _PLOT_OPTIONS = [{
     'label': 'P(r) distribution',
@@ -67,8 +68,8 @@ def fit_rg(sasm, qmin_idx, qmax_idx):
     rg = np.sqrt(-3.0 * opt[1])
     i0 = np.exp(opt[0])
 
-    rg_err = np.absolute(0.5 * (
-        np.sqrt(-3.0 / opt[1]))) * np.sqrt(np.absolute(cov[1, 1]))
+    rg_err = np.absolute(0.5 * (np.sqrt(-3.0 / opt[1]))) * np.sqrt(
+        np.absolute(cov[1, 1]))
     i0_err = i0 * np.sqrt(np.absolute(cov[0, 0]))
     # FIXME: rg_err and i0_err are probably not correct!
 
@@ -78,7 +79,7 @@ def fit_rg(sasm, qmin_idx, qmax_idx):
     return rg, rg_err, i0, i0_err, qRg_min, qRg_max
 
 
-def get_guinier(exp):
+def get_guinier():
     return _DEFAULT_LAYOUT
 
 
@@ -86,8 +87,9 @@ def get_guinier(exp):
     Output('guinier-file-selection', 'options'),
     [Input('page-info', 'children')])
 def _update_file_selection(info_json):
-    exp = json.loads(info_json)['exp']
-    file_list = raw_simulator.get_files(exp, 'subtracted_files')
+    info = json.loads(info_json)
+    project, experiment, run = info['project'], info['experiment'], info['run']
+    file_list = warehouse.get_files(project, experiment, run, 'subtracted_files')
     file_basename = (os.path.basename(each) for each in file_list)
     if file_list:
         return [{
@@ -110,9 +112,9 @@ def _update_file_selection(info_json):
     [State('page-info', 'children')],
 )
 def _update_figure(sasm_idx, q_range, info_json):
-
-    exp = json.loads(info_json)['exp']
-    sasm = raw_simulator.get_sasprofile(exp)[sasm_idx]
+    info = json.loads(info_json)
+    project, experiment, run = info['project'], info['experiment'], info['run']
+    sasm = warehouse.get_sasprofile(project, experiment, run)[sasm_idx]
     rg, _, i0, _, qRg_min, qRg_max = fit_rg(sasm, *q_range)
 
     q = sasm.q
@@ -161,5 +163,4 @@ def _update_figure(sasm_idx, q_range, info_json):
     figure['layout']['xaxis2'].update({'title': XLABEL['guinier']})
     figure['layout']['yaxis1'].update({'title': YLABEL['guinier']})
     figure['layout']['yaxis2'].update({'title': 'Residual'})
-
     return figure

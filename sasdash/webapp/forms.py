@@ -3,6 +3,13 @@ from wtforms import (StringField, BooleanField, FloatField, TextAreaField,
                      SubmitField)
 from wtforms.validators import InputRequired
 
+from sasdash.base import LAYOUT_OPTIONS
+
+
+class LocalFilePattern(FlaskForm):
+    filepattern = StringField('File pattern', validators=(InputRequired(), ))
+    scan = SubmitField(label='Scan')
+
 
 class ExperimentSetupForm(FlaskForm):
     def __init__(self, setup_yaml, **form_kwargs):
@@ -18,7 +25,7 @@ class ExperimentSetupForm(FlaskForm):
             field_kwargs = dict(
                 label=param.replace('_', ' ').capitalize(),
                 default=val,
-                validators=[InputRequired()],
+                validators=(InputRequired(), ),
             )
             fields.append((param, gen_unbound_field(**field_kwargs)))
 
@@ -44,15 +51,6 @@ class ExperimentSetupForm(FlaskForm):
 
 
 class LayoutConfigCheckbox(FlaskForm):
-    layout_options = [
-        ('sasimage', 'SAS Images'),
-        ('cormap', 'CorMap Analysis'),
-        ('sasprofile', 'SAS Profile'),
-        ('series_analysis', 'Series Analysis'),
-        ('guinier', 'Guinier'),
-        ('gnom', 'GNOM'),
-    ]
-
     def __init__(self, layouts, **form_kwargs):
         """[summary]
 
@@ -63,7 +61,7 @@ class LayoutConfigCheckbox(FlaskForm):
         """
         layouts_dict = {key: True for key in layouts}
         fields = []
-        for name, label in self.layout_options:
+        for name, label in LAYOUT_OPTIONS:
             field_kwargs = dict(
                 label=label, default=layouts_dict.get(name, False))
             fields.append((name, BooleanField(**field_kwargs)))
@@ -78,11 +76,11 @@ class LayoutConfigCheckbox(FlaskForm):
 
 
 class ExperimentSettingsForm(FlaskForm):
-    date = StringField('Experiment date', validators=[InputRequired()])
-    participants = StringField('Participants', validators=[InputRequired()])
+    date = StringField('Experiment date', validators=(InputRequired(), ))
+    participants = StringField('Participants', validators=(InputRequired(), ))
 
-    root = StringField('Root path', validators=[InputRequired()])
-    raw_cfg_path = StringField('RAW cfg path', validators=[InputRequired()])
+    root = StringField('Root path', validators=(InputRequired(), ))
+    raw_cfg_path = StringField('RAW cfg path', validators=(InputRequired(), ))
 
     default_setup_params = TextAreaField(
         'Default setup parameters',

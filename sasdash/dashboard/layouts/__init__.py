@@ -1,12 +1,12 @@
 from __future__ import print_function, division, absolute_import
 
-from .layouts.sasimage import get_sasimage
-from .layouts.sasprofile import get_sasprofile
-from .layouts.cormap import get_cormap
-from .layouts.series_analysis import get_series_analysis
-from .layouts.guinier import get_guinier
-from .layouts.colormap import get_colormap
-from .layouts.gnom import get_gnom
+from .sasimage import get_sasimage
+from .sasprofile import get_sasprofile
+from .cormap import get_cormap
+from .series_analysis import get_series_analysis
+from .guinier import get_guinier
+from .colormap import get_colormap
+from .gnom import get_gnom
 
 LAYOUT_OPTIONS = (
     ('sasimage', 'SAS Images'),

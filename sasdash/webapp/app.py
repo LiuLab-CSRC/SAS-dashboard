@@ -1,10 +1,12 @@
 from __future__ import print_function, division
 
+from string import ascii_letters
+from random import choice
+
 from flask import Flask
 from flask_bootstrap import Bootstrap
 
-from .views import index, exp_pages, playground, features
-from . import config
+from .views import index, playground, features, exp_pages
 
 
 def init_blueprint(app):
@@ -14,24 +16,27 @@ def init_blueprint(app):
     app.register_blueprint(features)
 
 
-def create_app(flask_config):
-    app = Flask(__name__)
-    app.config.from_object(flask_config)
+def create_app(flask_config=None):
+    app = Flask(__name__, instance_relative_config=True)
+    # app = Flask(__name__.split('.')[0], instance_relative_config=True)
+
+    secret_key = ''.join((choice(ascii_letters) for _ in range(10)))
+    default_config = {'CSRF_ENABLED': True, 'SECRET_KEY': secret_key}
+    app.config.from_mapping(default_config)
+    if flask_config is None:
+        app.config.from_pyfile('config.py')
+    else:
+        app.config.from_object(flask_config)
     app.url_map.strict_slashes = False
 
     init_blueprint(app)
-
     Bootstrap(app)
 
     if app.debug:
+        print('SECRET_KEY:', app.config['SECRET_KEY'])
         print(app.url_map)
 
     return app
 
 
-DASH_URL_BASE = '/dashboard'
-flask_app = create_app(config)
-
-if __name__ == '__main__':
-    flask_app = create_app(config)
-    flask_app.run(host='0.0.0.0')
+flask_app = create_app()

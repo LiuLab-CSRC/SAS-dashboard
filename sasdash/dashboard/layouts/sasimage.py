@@ -8,10 +8,10 @@ import dash_core_components as dcc
 import dash_html_components as html
 
 from sasdash.saslib.image import subtract_radial_average
+from sasdash.datamodel import warehouse
 
 from .style import GRAPH_GLOBAL_CONFIG, INLINE_LABEL_STYLE
 from ..base import dash_app
-# from ..datamodel import raw_simulator
 
 _PLOT_OPTIONS = [{
     'label': 'Heatmap',
@@ -108,7 +108,7 @@ _DEFAULT_LAYOUT = html.Div(children=[
 ])
 
 
-def get_sasimage(exp):
+def get_sasimage():
     return _DEFAULT_LAYOUT
 
 
@@ -120,8 +120,9 @@ def get_sasimage(exp):
     ],  # FIXME: bug????
 )
 def _update_file_selction_1(info_json, useless):
-    exp = json.loads(info_json)['exp']
-    file_list = raw_simulator.get_files(exp, 'image_files')
+    info = json.loads(info_json)
+    project, experiment, run = info['project'], info['experiment'], info['run']
+    file_list = warehouse.get_files(project, experiment, run, 'image_files')
     file_basename = (os.path.basename(i) for i in file_list)
     file_options = [{'label': i, 'value': i} for i in file_basename]
     return file_options
@@ -158,9 +159,10 @@ def _update_selction_value_2(file_options):
         Input('sasimage-file-selection-2', 'value'),
     ], [State('page-info', 'children')])
 def _set_colorbar_range(image_fname_1, image_fname_2, info_json):
-    exp = json.loads(info_json)['exp']
-    image_1 = raw_simulator.get_sasimage(exp, image_fname_1)
-    image_2 = raw_simulator.get_sasimage(exp, image_fname_2)
+    info = json.loads(info_json)
+    project, experiment, run = info['project'], info['experiment'], info['run']
+    image_1 = warehouse.get_sasimage(exp, image_fname_1)
+    image_2 = warehouse.get_sasimage(exp, image_fname_2)
     return min(image_1.min(), image_2.min())
 
 
@@ -170,9 +172,10 @@ def _set_colorbar_range(image_fname_1, image_fname_2, info_json):
         Input('sasimage-file-selection-2', 'value'),
     ], [State('page-info', 'children')])
 def _set_colorbar_range(image_fname_1, image_fname_2, info_json):
-    exp = json.loads(info_json)['exp']
-    image_1 = raw_simulator.get_sasimage(exp, image_fname_1)
-    image_2 = raw_simulator.get_sasimage(exp, image_fname_2)
+    info = json.loads(info_json)
+    project, experiment, run = info['project'], info['experiment'], info['run']
+    image_1 = warehouse.get_sasimage(exp, image_fname_1)
+    image_2 = warehouse.get_sasimage(exp, image_fname_2)
     return max(image_1.max(), image_2.max())
 
 
@@ -182,9 +185,10 @@ def _set_colorbar_range(image_fname_1, image_fname_2, info_json):
 #         Input('sasimage-file-selection-2', 'value'),
 #     ], [State('page-info', 'children')])
 # def _set_colorbar_range(image_fname_1, image_fname_2, info_json):
-#     exp = json.loads(info_json)['exp']
-#     image_1 = raw_simulator.get_sasimage(exp, image_fname_1)
-#     image_2 = raw_simulator.get_sasimage(exp, image_fname_2)
+#     info = json.loads(info_json)
+#     project, experiment, run = info['project'], info['experiment'], info['run']
+#     image_1 = warehouse.get_sasimage(exp, image_fname_1)
+#     image_2 = warehouse.get_sasimage(exp, image_fname_2)
 #     lower_bound = min(image_1.min(), image_2.min())
 #     upper_bound = max(image_1.max(), image_2.max())
 #     return [lower_bound, upper_bound]
@@ -198,8 +202,9 @@ def _update_image(
         circle_radius,
         info_json,
 ):
-    exp = json.loads(info_json)['exp']
-    image = raw_simulator.get_sasimage(exp, image_fname)
+    info = json.loads(info_json)
+    project, experiment, run = info['project'], info['experiment'], info['run']
+    image = warehouse.get_sasimage(exp, image_fname)
 
     if show_circle:
         circle_layout = {
@@ -225,7 +230,7 @@ def _update_image(
         plot_type = 'heatmap'
         # center of (row, col)
         rc_center = (center[1], center[0])
-        mask = raw_simulator.boxed_mask
+        mask = warehouse.boxed_mask
         # subtract_average_image
         image = subtract_radial_average(image, rc_center, mask)
         colorbar_range[0] = image.min()

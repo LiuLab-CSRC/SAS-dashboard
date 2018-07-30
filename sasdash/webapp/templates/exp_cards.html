@@ -11,15 +11,15 @@
       <th>Notes</th>
       <th>More</th>
     </thead>
-      {% for i, (exp_name, setup) in exp_table_list %}
+      {% for i, (run, setup) in exp_table_list %}
       <tr>
         <td>{{ i }}</td>
-        <td>{{ exp_name }}</td>
+        <td>{{ run }}</td>
         <td>{{ setup.sample }}</td>
         <td>{{ setup.concentration }}</td>
         <td>{{ setup.magnet_distance }}</td>
         <td>{{ setup.simple_conclusion }}</td>
-        <td><a href="/exp_pages/{{ exp_name }}">Details</a></td>
+        <td><a href="/exp_pages/MagR/SSRF-SAXS-201805/{{ run }}">Details</a></td>
       </tr>
       {% endfor %}
   </table>

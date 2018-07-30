@@ -7,10 +7,11 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 
+from sasdash.datamodel import warehouse
+
 from .style import XLABEL, YLABEL, TITLE, INLINE_LABEL_STYLE
 from .style import GRAPH_GLOBAL_CONFIG
 from ..base import dash_app
-# from ..datamodel import raw_simulator
 
 _PLOT_OPTIONS = [{
     'label': 'P(r) distribution',
@@ -59,15 +60,16 @@ _DEFAULT_FIGURE_LAYOUT = {
 }
 
 
-def get_gnom(exp):
+def get_gnom():
     return _DEFAULT_LAYOUT
 
 
 @dash_app.callback(
     Output('gnom-file-selection', 'options'), [Input('page-info', 'children')])
 def _update_file_selection(info_json):
-    exp = json.loads(info_json)['exp']
-    file_list = raw_simulator.get_files(exp, 'gnom_files')
+    info = json.loads(info_json)
+    project, experiment, run = info['project'], info['experiment'], info['run']
+    file_list = warehouse.get_files(project, experiment, run, 'gnom_files')
     file_basename = (os.path.basename(each) for each in file_list)
     if file_list:
         return [{
@@ -90,15 +92,16 @@ def _update_file_selection(info_json):
     [State('page-info', 'children')],
 )
 def _update_figure(plot_type, iftm_index, info_json):
-    exp = json.loads(info_json)['exp']
-    iftm_list = raw_simulator.get_gnom(exp)
+    info = json.loads(info_json)
+    project, experiment, run = info['project'], info['experiment'], info['run']
+    iftm_list = warehouse.get_gnom(project, experiment, run)
     if iftm_list:
         if plot_type == 'pr_distribution':
             data = [{
                 'x': each_iftm.r,
                 'y': each_iftm.p,
                 'type': 'line',
-                'name': each_iftm.getParameter('filename')
+                'name': each_iftm.get_parameter('filename')
             } for each_iftm in iftm_list]
         elif plot_type == 'fitting':
             selected_iftm = iftm_list[iftm_index]
@@ -106,7 +109,7 @@ def _update_figure(plot_type, iftm_index, info_json):
                 'x': selected_iftm.q_orig,
                 'y': selected_iftm.i_orig,
                 'type': 'line',
-                'name': selected_iftm.getParameter('filename'),
+                'name': selected_iftm.get_parameter('filename'),
             }, {
                 'x': selected_iftm.q_extrap,
                 'y': selected_iftm.i_extrap,

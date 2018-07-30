@@ -7,12 +7,12 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 
+from sasdash.datamodel import warehouse
+
 from .style import XLABEL, YLABEL, TITLE, LINE_STYLE
 from .style import AXIS_OPTIONS
 from .style import INLINE_LABEL_STYLE, GRAPH_GLOBAL_CONFIG
 from ..base import dash_app
-
-# from ..datamodel import raw_simulator
 
 _DIFF_OPTIONS = [{
     'label': 'Relative difference',
@@ -95,13 +95,13 @@ _DEFAULT_LAYOUT = html.Div(children=[
 ])
 
 
-def get_series_analysis(exp):
+def get_series_analysis():
     return _DEFAULT_LAYOUT
 
 
-def _get_figure(exp, plot_type, ref_idx, xaxis_scale, xlim=None, ylim=None):
-
-    sasm_list = raw_simulator.get_sasprofile(exp)
+def _get_figure(info, plot_type, ref_idx, xaxis_scale, xlim=None, ylim=None):
+    project, experiment, run = info['project'], info['experiment'], info['run']
+    sasm_list = warehouse.get_sasprofile(project, experiment, run)
     if 'diff' in plot_type.lower():
         ref_sasm = sasm_list[ref_idx]
     else:
@@ -119,7 +119,7 @@ def _get_figure(exp, plot_type, ref_idx, xaxis_scale, xlim=None, ylim=None):
         'y': _CALC_FUNCTION[plot_type](each_sasm, ref_sasm),
         'type': 'line',
         'line': LINE_STYLE,
-        'name': each_sasm.getParameter('filename'),
+        'name': each_sasm.get_parameter('filename'),
     } for each_sasm in sasm_list]
 
     return {
@@ -147,16 +147,16 @@ def _get_figure(exp, plot_type, ref_idx, xaxis_scale, xlim=None, ylim=None):
 )
 def _update_figure(plot_type, ref_idx, xaxis_scale, xlim, ylim, info_json):
     info_dict = json.loads(info_json)
-    exp = info_dict['exp']
-    return _get_figure(exp, plot_type, ref_idx, xaxis_scale, xlim, ylim)
+    return _get_figure(info_dict, plot_type, ref_idx, xaxis_scale, xlim, ylim)
 
 
 @dash_app.callback(
     Output('difference-ref-selection', 'options'),
     [Input('page-info', 'children')])
 def _set_ref_options(info_json):
-    exp = json.loads(info_json)['exp']
-    file_list = raw_simulator.get_files(exp, 'subtracted_files')
+    info = json.loads(info_json)
+    project, experiment, run = info['project'], info['experiment'], info['run']
+    file_list = warehouse.get_files(project, experiment, run, 'subtracted_files')
     return [{
         'label': os.path.basename(each),
         'value': i,

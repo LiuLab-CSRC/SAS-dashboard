@@ -20,7 +20,7 @@ class SASM(Base):
             raise DataNotCompatible(
                 'length of (q, intensity, error) is not equal.')
         self._raw_q = self._q = np.array(q).reshape(-1)
-        self._raw_i = self._i = np.array(i).rehspae(-1)
+        self._raw_i = self._i = np.array(i).reshape(-1)
         self._raw_err = self._err = np.array(err).reshape(-1)
 
         self._scale_factor = 1.0
@@ -110,6 +110,9 @@ class SASM(Base):
     def _update(self):
         """updates modified intensity after scale, normalization and offset changes"""
         pass
+
+    def get_parameter(self, key, default=None):
+        return self._parameters.get(key, default)
 
     def get_profile(self, qmin, qmax):
         idxs = np.logical_and(self.q >= qmin, self.q < qmax)
