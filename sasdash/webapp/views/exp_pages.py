@@ -34,17 +34,25 @@ def experiment_settings():
     )
 
 
-@exp_pages.route('/exp_pages')
 @exp_pages.route('/exp_cards')
-def show_exp_cards():
-    setup_files = warehouse.get_all_setup('MagR', 'SSRF-SAXS-201805')
-    run_list = [
-        os.path.basename(os.path.dirname(filepath)) for filepath in setup_files
-    ]
+@exp_pages.route('/exp_pages')
+@exp_pages.route('/exp_pages/<string:project>', defaults={'experiment': None})
+@exp_pages.route('/exp_pages/<string:project>/<string:experiment>')
+def show_exp_cards(project: str = None, experiment: str = None):
+    project = 'MagR'
+    experiment = 'SSRF-SAXS-201805'
+    setup_files = warehouse.get_all_setup(project, 'SSRF-SAXS-201805')
+    prj_exp_run_list = [{
+        'project': 'MagR',
+        'experiment': 'SSRF-SAXS-201805',
+        'run': os.path.basename(os.path.dirname(filepath))
+    } for filepath in setup_files]
     exp_setup_list = [parse_yaml(filepath) for filepath in setup_files]
     return render_template(
         'exp_cards.html',
-        exp_table_list=enumerate(zip(run_list, exp_setup_list)),
+        project='MagR',
+        experiment='SSRF-SAXS-201805',
+        exp_table_list=enumerate(zip(prj_exp_run_list, exp_setup_list)),
     )
 
 
@@ -58,7 +66,8 @@ def show_exp_cards():
     methods=('GET', 'POST'),
 )
 def individual_page(project: str, experiment: str, run: str):
-    dir_path = warehouse.get_dir_path(project, experiment, run)
+    prj_exp_run = {'project': project, 'experiment': experiment, 'run': run}
+    dir_path = warehouse.get_dir_path(**prj_exp_run)
 
     # find and load setup/config file
     setup_file = os.path.join(dir_path, 'setup.yml')
@@ -89,7 +98,7 @@ def individual_page(project: str, experiment: str, run: str):
                 key = key.lower().replace(' ', '_')
                 exp_setup[key] = to_basic_type(value)
         dump_yaml(exp_setup, setup_file)
-        return redirect(url_for('.individual_page', project, experiment, run))
+        return redirect(url_for('.individual_page', **prj_exp_run))
 
     if (layouts_checkbox.generate.data
             and layouts_checkbox.validate_on_submit()):
@@ -102,7 +111,7 @@ def individual_page(project: str, experiment: str, run: str):
         exp_config['layouts'] = curr_layouts
         dump_yaml(exp_config, config_file)
         # TODO: reset_exp(run)
-        return redirect(url_for('.individual_page', project, experiment, run))
+        return redirect(url_for('.individual_page', **prj_exp_run))
 
     # create info for rendering
     if exp_config['layouts']:
@@ -143,7 +152,8 @@ def individual_page(project: str, experiment: str, run: str):
     '/download_files/<string:project>/<string:experiment>/<string:run>/<string:graph_type>'
 )
 def download_files(project, experiment, run, graph_type):
-    directory = warehouse.get_dir_path(project, experiment, run)
+    prj_exp_run = {'project': project, 'experiment': experiment, 'run': run}
+    directory = warehouse.get_dir_path(**prj_exp_run)
     filename = os.path.join(directory, '%s_%s.zip' % (run, graph_type))
     if zipfile.is_zipfile(filename):
         return send_file(filename, as_attachment=True)

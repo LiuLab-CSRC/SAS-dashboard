@@ -22,11 +22,12 @@ dash_app.config.update({
 """
 <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
 """
-mathjax_js = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML'
+# mathjax_js = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML'
+# mathjax_js = '/static/js/MathJax.js?config=TeX-MML-AM_CHTML'
 # dash_app.scripts.append_script({'external_url': mathjax_js})
-dash_app.footer = [
-    html.Script(type='text/javascript', src=mathjax_js)  #async='async')
-]
+# dash_app.footer = [
+#     html.Script(type='text/javascript', src=mathjax_js)  #async='async')
+# ]
 
 # # Append an externally hosted CSS stylesheet
 # dash_app.css.append_css({
@@ -44,7 +45,7 @@ dash_app.scripts.config.serve_locally = True
 dash_app.layout = html.Div(children=[
     # FIXME: fix this hard coding path (/static)
     html.Link(rel='stylesheet', href='/static/css/bWLwgP.css'),
-    # html.Link(rel='stylesheet', href='/static/css/brPBPO.css'),  # fade in while loading
+    html.Link(rel='stylesheet', href='/static/css/brPBPO.css'),  # fade in while loading
     html.Link(rel='stylesheet', href='/static/css/dash.css'),
     dcc.Location(id='url', refresh=False),
     html.Div(id='page-info', style={'display': 'none'}),
