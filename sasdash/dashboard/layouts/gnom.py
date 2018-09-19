@@ -24,7 +24,7 @@ _PLOT_OPTIONS = [{
 _DEFAULT_LAYOUT = html.Div(children=[
     dcc.Graph(
         id='gnom-graph',
-        figure={},
+        figure={'data': ()},
         config=GRAPH_GLOBAL_CONFIG,
     ),
     html.Label('Plot type'),

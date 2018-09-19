@@ -40,7 +40,7 @@ _DEFAULT_PLOT_TYPE = 'relative_diff'
 _DEFAULT_LAYOUT = html.Div(children=[
     dcc.Graph(
         id='difference-graph',
-        figure={},
+        figure={'data': ()},
         config=GRAPH_GLOBAL_CONFIG,
     ),
     html.Label('Select as base reference:'),
@@ -100,8 +100,8 @@ def get_series_analysis():
 
 
 def _get_figure(info, plot_type, ref_idx, xaxis_scale, xlim=None, ylim=None):
-    project, experiment, run = info['project'], info['experiment'], info['run']
-    sasm_list = warehouse.get_sasprofile(project, experiment, run)
+    per_dict = {key: info[key] for key in ('project', 'experiment', 'run')}
+    sasm_list = warehouse.get_sasprofile(**per_dict)
     if 'diff' in plot_type.lower():
         ref_sasm = sasm_list[ref_idx]
     else:
@@ -156,7 +156,8 @@ def _update_figure(plot_type, ref_idx, xaxis_scale, xlim, ylim, info_json):
 def _set_ref_options(info_json):
     info = json.loads(info_json)
     project, experiment, run = info['project'], info['experiment'], info['run']
-    file_list = warehouse.get_files(project, experiment, run, 'subtracted_files')
+    file_list = warehouse.get_files(project, experiment, run,
+                                    'subtracted_files')
     return [{
         'label': os.path.basename(each),
         'value': i,

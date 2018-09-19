@@ -56,7 +56,7 @@ def _six_columns(suffix: str):
         children=[
             dcc.Graph(
                 id='sasimage-graph-%s' % str(suffix),
-                figure={},
+                figure={'data': ()},
                 config=GRAPH_GLOBAL_CONFIG,
             ),
             html.Label('Plot type'),
@@ -121,8 +121,9 @@ def get_sasimage():
 )
 def _update_file_selction_1(info_json, useless):
     info = json.loads(info_json)
-    project, experiment, run = info['project'], info['experiment'], info['run']
-    file_list = warehouse.get_files(project, experiment, run, 'image_files')
+    per_dict = {key: info[key] for key in ('project', 'experiment', 'run')}
+    per_dict['file_type'] = 'image_files'
+    file_list = warehouse.get_files(**per_dict)
     file_basename = (os.path.basename(i) for i in file_list)
     file_options = [{'label': i, 'value': i} for i in file_basename]
     return file_options
@@ -161,8 +162,8 @@ def _update_selction_value_2(file_options):
 def _set_colorbar_range(image_fname_1, image_fname_2, info_json):
     info = json.loads(info_json)
     project, experiment, run = info['project'], info['experiment'], info['run']
-    image_1 = warehouse.get_sasimage(exp, image_fname_1)
-    image_2 = warehouse.get_sasimage(exp, image_fname_2)
+    image_1 = warehouse.get_sasimage(project, experiment, run, image_fname_1)
+    image_2 = warehouse.get_sasimage(project, experiment, run, image_fname_2)
     return min(image_1.min(), image_2.min())
 
 
@@ -174,8 +175,8 @@ def _set_colorbar_range(image_fname_1, image_fname_2, info_json):
 def _set_colorbar_range(image_fname_1, image_fname_2, info_json):
     info = json.loads(info_json)
     project, experiment, run = info['project'], info['experiment'], info['run']
-    image_1 = warehouse.get_sasimage(exp, image_fname_1)
-    image_2 = warehouse.get_sasimage(exp, image_fname_2)
+    image_1 = warehouse.get_sasimage(project, experiment, run, image_fname_1)
+    image_2 = warehouse.get_sasimage(project, experiment, run, image_fname_2)
     return max(image_1.max(), image_2.max())
 
 
@@ -204,7 +205,7 @@ def _update_image(
 ):
     info = json.loads(info_json)
     project, experiment, run = info['project'], info['experiment'], info['run']
-    image = warehouse.get_sasimage(exp, image_fname)
+    image = warehouse.get_sasimage(project, experiment, run, image_fname)
 
     if show_circle:
         circle_layout = {

@@ -91,7 +91,7 @@ _DEFAULT_PLOT_TYPE = _LOG_LIN
 _DEFAULT_LAYOUT = html.Div(children=[
     dcc.Graph(
         id='sasprofile-graph',
-        figure={},
+        figure={'data': ()},
         config=GRAPH_GLOBAL_CONFIG,
     ),
     html.Details(children=[
@@ -166,9 +166,8 @@ def _get_figure(info, plot_type, errorbar_visible, xlim=None):
     if xlim:
         xaxis['range'] = xlim
 
-    experiment = info['experiment']
-    run = info['run']
-    sasm_list = warehouse.get_sasprofile(experiment, run)
+    per_dict = {key: info[key] for key in ('project', 'experiment', 'run')}
+    sasm_list = warehouse.get_sasprofile(**per_dict)
 
     data = [{
         'x': _CALC_FUNCTION[profile_name]['q'](each_sasm.q),

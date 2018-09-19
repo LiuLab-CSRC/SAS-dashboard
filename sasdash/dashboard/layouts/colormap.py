@@ -37,7 +37,7 @@ _XLIM_MAX = 200
 _DEFAULT_LAYOUT = html.Div(children=[
     dcc.Graph(
         id='colormap-graph',
-        figure={},
+        figure={'data': ()},
         config=GRAPH_GLOBAL_CONFIG,
     ),
     html.Label('Plot type'),
@@ -72,8 +72,8 @@ def get_colormap():
 
 
 def _get_figure(info, plot_type, profile_type, q_idx):
-    project, experiment, run = info['project'], info['experiment'], info['run']
-    sasm_list = warehouse.get_sasprofile(project, experiment, run)
+    per_dict = {key: info[key] for key in ('project', 'experiment', 'run')}
+    sasm_list = warehouse.get_sasprofile(**per_dict)
 
     # TODO: Fix length of q vector. Use new SASM method.
     if plot_type == 'colormap':
@@ -139,8 +139,8 @@ def _get_figure(info, plot_type, profile_type, q_idx):
     [State('page-info', 'children')],
 )
 def _update_graph(plot_type, profile_type, q_idx, info_json):
-    exp = json.loads(info_json)['exp']
-    return _get_figure(exp, plot_type, profile_type, q_idx)
+    info = json.loads(info_json)
+    return _get_figure(info, plot_type, profile_type, q_idx)
 
 
 @dash_app.callback(

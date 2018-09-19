@@ -28,7 +28,7 @@ _PLOT_OPTIONS = [{
 _DEFAULT_LAYOUT = html.Div(children=[
     dcc.Graph(
         id='guinier-graph',
-        figure={},
+        figure={'data': ()},
         config=GRAPH_GLOBAL_CONFIG,
     ),
     html.Button('Auto RG (not available for now)', id='guinier-autorg'),
@@ -89,7 +89,8 @@ def get_guinier():
 def _update_file_selection(info_json):
     info = json.loads(info_json)
     project, experiment, run = info['project'], info['experiment'], info['run']
-    file_list = warehouse.get_files(project, experiment, run, 'subtracted_files')
+    file_list = warehouse.get_files(project, experiment, run,
+                                    'subtracted_files')
     file_basename = (os.path.basename(each) for each in file_list)
     if file_list:
         return [{
@@ -124,23 +125,22 @@ def _update_figure(sasm_idx, q_range, info_json):
 
     figure = tools.make_subplots(rows=2, cols=1, print_grid=False)
     # first subplot
-    figure['data'] += [
-        {
-            'x': q[rg_slice],
-            'y': np.log(intensity[rg_slice]),  # ln scale
-            'mode': 'markers',
-            # 'line': dict(dash='dot', **LINE_STYLE),
-            'name': 'source curve',
-        },
-        {
-            'x': q[rg_slice],
-            'y': fitting_curve,
-            'line': LINE_STYLE,
-            'name': 'fitting curve',
-        }
-    ]
+    figure.add_trace({
+        'x': q[rg_slice],
+        'y': np.log(intensity[rg_slice]),  # ln scale
+        'mode': 'markers',
+        # 'line': dict(dash='dot', **LINE_STYLE),
+        'name': 'source curve',
+    })
+    figure.add_trace({
+        'x': q[rg_slice],
+        'y': fitting_curve,
+        'line': LINE_STYLE,
+        'name': 'fitting curve',
+    })
+
     # second subplot
-    figure['data'] += [{
+    figure.add_trace({
         'x': q[rg_slice],
         'y': intensity[rg_slice] - np.exp(fitting_curve),
         'mode': 'markers',
@@ -148,14 +148,15 @@ def _update_figure(sasm_idx, q_range, info_json):
         'name': 'residual',
         'xaxis': 'x2',
         'yaxis': 'y2',
-    }, {
+    })
+    figure.add_trace({
         'x': q[rg_slice],
         'y': np.zeros_like(q[rg_slice]),
         'line': LINE_STYLE,
         'name': 'zero',
         'xaxis': 'x2',
         'yaxis': 'y2',
-    }]  # yapf: disable
+    })
 
     rg_res = 'Rg={:.4f}, I0={:.4f}, curr index(qRg limits): ({}, {})({:.4f}, {:.4f})'.format(
         rg, i0, q_range[0], q_range[1], qRg_min, qRg_max)

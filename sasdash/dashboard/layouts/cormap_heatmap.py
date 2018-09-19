@@ -21,13 +21,13 @@ _PLOT_OPTIONS = [{
 
 _DEFAULT_LAYOUT = html.Div(children=[
     dcc.Graph(
-        id='cormap-graph',
-        figure={},
+        id='cormap-heatmap-graph',
+        figure={'data': ()},
         config=GRAPH_GLOBAL_CONFIG,
     ),
     html.Label('Plot type'),
     dcc.RadioItems(
-        id='cormap-plot-type',
+        id='cormap-heatmap-plot-type',
         options=_PLOT_OPTIONS,
         value='adj Pr(>C)',
         labelStyle=INLINE_LABEL_STYLE,
@@ -35,7 +35,7 @@ _DEFAULT_LAYOUT = html.Div(children=[
 ])
 
 
-def get_cormap():
+def get_cormap_heatmap():
     return _DEFAULT_LAYOUT
 
 
@@ -49,9 +49,9 @@ _DEFAULT_FIGURE_LAYOUT = {
 
 
 @dash_app.callback(
-    Output('cormap-graph', 'figure'),
+    Output('cormap-heatmap-graph', 'figure'),
     [
-        Input('cormap-plot-type', 'value'),
+        Input('cormap-heatmap-plot-type', 'value'),
         Input('page-info', 'children'),
     ],
 )
