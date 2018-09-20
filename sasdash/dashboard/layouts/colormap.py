@@ -135,10 +135,12 @@ def _get_figure(info, plot_type, profile_type, q_idx):
         Input('colormap-plot-type', 'value'),
         Input('colormap-profile-type', 'value'),
         Input('colormap-q-slice', 'value'),
+        Input('page-info', 'children'),
     ],
-    [State('page-info', 'children')],
 )
 def _update_graph(plot_type, profile_type, q_idx, info_json):
+    assert info_json, 'False'
+    assert info_json is not None, 'info json is None'
     info = json.loads(info_json)
     return _get_figure(info, plot_type, profile_type, q_idx)
 

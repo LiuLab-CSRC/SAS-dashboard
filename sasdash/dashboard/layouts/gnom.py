@@ -88,8 +88,8 @@ def _update_file_selection(info_json):
     [
         Input('gnom-plot-type', 'value'),
         Input('gnom-file-selection', 'value'),
+        Input('page-info', 'children'),
     ],
-    [State('page-info', 'children')],
 )
 def _update_figure(plot_type, iftm_index, info_json):
     info = json.loads(info_json)
@@ -99,7 +99,7 @@ def _update_figure(plot_type, iftm_index, info_json):
         if plot_type == 'pr_distribution':
             data = [{
                 'x': each_iftm.r,
-                'y': each_iftm.p,
+                'y': each_iftm.pr,
                 'type': 'line',
                 'name': each_iftm.get_parameter('filename')
             } for each_iftm in iftm_list]

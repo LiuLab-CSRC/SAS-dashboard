@@ -259,8 +259,8 @@ def _get_figure(info, plot_type, errorbar_visible, xlim=None):
         Input('sasprofile-plot-type', 'value'),
         Input('sasprofile-errorbar', 'value'),
         Input('sasprofile-xlim', 'value'),
+        Input('page-info', 'children'),
     ],
-    [State('page-info', 'children')],
 )
 def _update_graph(plot_type, errorbar_visible, curr_xlim, info_json):
     info_dict = json.loads(info_json)

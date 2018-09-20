@@ -142,8 +142,8 @@ def _get_figure(info, plot_type, ref_idx, xaxis_scale, xlim=None, ylim=None):
         Input('difference-xaxis-scale', 'value'),
         Input('difference-xlim', 'value'),
         Input('difference-ylim', 'value'),
+        Input('page-info', 'children'),
     ],
-    [State('page-info', 'children')],
 )
 def _update_figure(plot_type, ref_idx, xaxis_scale, xlim, ylim, info_json):
     info_dict = json.loads(info_json)

@@ -109,8 +109,8 @@ def _update_file_selection(info_json):
     [
         Input('guinier-file-selection', 'value'),
         Input('guinier-q-range', 'value'),
+        Input('page-info', 'children'),
     ],
-    [State('page-info', 'children')],
 )
 def _update_figure(sasm_idx, q_range, info_json):
     info = json.loads(info_json)
