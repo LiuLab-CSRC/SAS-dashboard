@@ -37,9 +37,6 @@ _DEFAULT_FIGURE_LAYOUT = {
     'yaxis': dict(title='pixel', autorange='reversed'),
 }
 
-# TODO: set center in (x, y)<->(col, row) instead of (row, col)
-center = None
-
 
 def _six_columns(suffix: str):
     """return html.Div content with six columns class.
@@ -207,16 +204,19 @@ def _update_image(
     project, experiment, run = info['project'], info['experiment'], info['run']
     image = warehouse.get_sasimage(project, experiment, run, image_fname)
 
+    boxed_rc_center = warehouse.get_raw_cfg_param(project, experiment, run, 'boxed_rc_center')
+    xy_center = (boxed_rc_center[1], boxed_rc_center[0])
+
     if show_circle:
         circle_layout = {
             'shapes': [{  # unfilled circle
                 'type': 'circle',
                 'xref': 'x',
                 'yref': 'y',
-                'x0': center[0] - circle_radius,
-                'y0': center[1] - circle_radius,
-                'x1': center[0] + circle_radius,
-                'y1': center[1] + circle_radius,
+                'x0': xy_center[0] - circle_radius,
+                'y0': xy_center[1] - circle_radius,
+                'x1': xy_center[0] + circle_radius,
+                'y1': xy_center[1] + circle_radius,
                 'line': {
                     'color': 'rgba(225, 225, 225, 1)',
                 },
@@ -229,11 +229,9 @@ def _update_image(
 
     if plot_type == 'subtraction':
         plot_type = 'heatmap'
-        # center of (row, col)
-        rc_center = (center[1], center[0])
-        mask = warehouse.boxed_mask
+        mask = warehouse.get_raw_cfg_param(project, experiment, run, 'boxed_mask')
         # subtract_average_image
-        image = subtract_radial_average(image, rc_center, mask)
+        image = subtract_radial_average(image, boxed_rc_center, mask)
         colorbar_range[0] = image.min()
         colorbar_range[1] = image.max()
 

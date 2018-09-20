@@ -52,7 +52,7 @@ class ExperimentSetupForm(FlaskForm):
 
 class LayoutConfigCheckbox(FlaskForm):
     def __init__(self, layouts, **form_kwargs):
-        """[summary]
+        """Create LayoutConfig checkbox
 
         Parameters
         ----------
@@ -76,22 +76,27 @@ class LayoutConfigCheckbox(FlaskForm):
 
 
 class ExperimentSettingsForm(FlaskForm):
-    date = StringField('Experiment date', validators=(InputRequired(), ))
-    participants = StringField('Participants', validators=(InputRequired(), ))
+    def __init__(self, config, **form_kwargs):
+        # Initial unbound_fields.
+        # This will overwrite all defined fields outside of __init__().
+        fields = []
+        # TODO: add security filter
+        for param, val in config.items():
+            field_kwargs = dict(
+                label=param.replace('_', ' ').capitalize(),
+                default=val,
+                validators=(),
+            )
+            fields.append((param, TextAreaField(**field_kwargs)))
 
-    root = StringField('Root path', validators=(InputRequired(), ))
-    raw_cfg_path = StringField('RAW cfg path', validators=(InputRequired(), ))
+        # fields.append(('save', SubmitField('Save')))
 
-    default_setup_params = TextAreaField(
-        'Default setup parameters',
-        render_kw={
-            'rows':
-            1,
-            'placeholder':
-            'example: sample, concentration, ... (separate by comma)'
-        })
+        # We keep the name as the second element of the sort
+        # to ensure a stable sort.
+        fields.sort(key=lambda x: (x[1].creation_counter, x[0]))
+        self._unbound_fields = fields
 
-    save = SubmitField(label='Save')
+        super().__init__(**form_kwargs)
 
 
 class SampleInfoForm(FlaskForm):

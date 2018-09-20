@@ -45,9 +45,18 @@ def profile_analysis(UUID=None):
     )
 
 
-@playground.route('/2d_image')
-def image_analysis():
-    return 'Hello, here is 2D images.'
+@playground.route('/2d_image', defaults={'UUID': None})
+@playground.route('/2d_image/<string:UUID>')
+def image_analysis(UUID=None):
+    if UUID is None:
+        new_dirname = uuid.uuid4().hex
+        return redirect(url_for('playground.image_analysis', UUID=new_dirname))
+    else:
+        # TODO: check exist
+        pass
+    return """Hello, here is 2D image analysis.
+    Roadmap: Upload scattering images. Calculate radial profile or else analysis.
+    """
 
 
 @playground.route('/3d_density', defaults={'UUID': None})
@@ -59,4 +68,7 @@ def density_analysis(UUID=None):
     else:
         # TODO: check exist
         pass
-    return render_template('3d_density.html')
+    return """Hello, here is 3D Density analysis.
+    Roadmap: Upload density file or fetch model from PDB database.
+    Display in browser. Calculate 1D profile from model. More...
+    """

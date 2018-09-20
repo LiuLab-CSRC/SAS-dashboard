@@ -14,7 +14,7 @@
 
   <div class="tab-content">
     <div id="general" class="tab-pane active">
-      {{ wtf.quick_form(exp_settings_form, form_type='horizontal', horizontal_columns=('sm', 3, 9), id='settings-form') }}
+      {{ wtf.quick_form(settings_form, form_type='horizontal', horizontal_columns=('sm', 3, 9), id='settings-form') }}
     </div>
     <div id="sample_list" class="tab-pane">
       {{ wtf.quick_form(samples_info_form, form_type='horizontal', horizontal_columns=('sm', 3, 9), id='samples-form') }}

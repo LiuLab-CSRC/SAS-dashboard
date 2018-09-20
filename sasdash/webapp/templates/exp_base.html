@@ -45,7 +45,7 @@
             <h4 id="{{ dp.graph_type }}">{{ dp.graph_name }}</h4>
           {%- endif %}
           <div class="dash-embed-responsive">
-            <iframe id="{{ dp.graph_type }}-iframe" class="dash-embed-responsive-item" src="" name="{{ url_for('/dashboard', project=project, experiment=experiment, run=run, graph_type=dp.graph_type) }}">
+            <iframe id="{{ dp.graph_type }}-iframe" class="dash-embed-responsive-item" src="" name="{{ url_for('/dashboard/', project=project, experiment=experiment, run=run, graph_type=dp.graph_type) }}">
             </iframe>
           </div>
         {%- endfor %}

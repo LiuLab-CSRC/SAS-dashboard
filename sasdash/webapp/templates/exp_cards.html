@@ -2,30 +2,32 @@
 
 {% block page_content %}
 <h2>{{ project }}</h2><hr>
-<!-- <h3>{{ experiment}} </h3> -->
-<details open><summary>{{ experiment }}</summary>
-<table class="table table-hover">
-  <caption>Optional table caption.</caption>
-  <thead>
-    <th>#</th>
-    <th>Directory</th>
-    <th>Sample</th>
-    <th>Concentration(mg/ml)</th>
-    <th>Magnet distance(mm)</th>
-    <th>Notes</th>
-    <th>More</th>
-  </thead>
-  {% for i, (per_dict, setup) in exp_table_list %}
-  <tr>
-    <td>{{ i }}</td>
-    <td>{{ per_dict.run }}</td>
-    <td>{{ setup.sample }}</td>
-    <td>{{ setup.concentration }}</td>
-    <td>{{ setup.magnet_distance }}</td>
-    <td>{{ setup.simple_conclusion }}</td>
-    <td><a href="{{ url_for('exp_pages.individual_page', **per_dict) }}">Details</a></td>
-  </tr>
-  {% endfor %}
-</table>
-</details>
+{% for (experiment, run_table_list) in exp_run_list %}
+  <!-- <h3>{{ experiment}} </h3> -->
+  <details open><summary>{{ experiment.name }}</summary>
+  <table class="table table-hover">
+    <caption>{{ experiment.description }}</caption>
+    <thead>
+      <th>#</th>
+      <th>Directory</th>
+      <th>Sample</th>
+      <th>Concentration(mg/ml)</th>
+      <th>Magnet distance(mm)</th>
+      <th>Notes</th>
+      <th>More</th>
+    </thead>
+    {% for i, (per_dict, setup) in run_table_list %}
+    <tr>
+      <td>{{ i }}</td>
+      <td>{{ per_dict.run }}</td>
+      <td>{{ setup.sample }}</td>
+      <td>{{ setup.concentration }}</td>
+      <td>{{ setup.magnet_distance }}</td>
+      <td>{{ setup.simple_conclusion }}</td>
+      <td><a href="{{ url_for('exp_pages.individual_page', **per_dict) }}">Details</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+  </details>
+{% endfor %}
 {% endblock %}

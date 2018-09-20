@@ -8,9 +8,9 @@ from flask import Blueprint
 from flask import render_template, redirect, request, jsonify, url_for
 from flask import send_from_directory, send_file
 
-from sasdash.utils import to_basic_type, parse_yaml, dump_yaml
+from sasdash.utils import to_basic_type, parse_yaml, dump_yaml, yaml
 from sasdash.datamodel import warehouse
-from sasdash.base import REGISTERED_LAYOUTS, DOWNLOADABLE, SUBFOLDER
+from sasdash.base import REGISTERED_LAYOUTS, DOWNLOADABLE, SUBFOLDER, sort_seq
 
 from ..forms import (ExperimentSettingsForm, ExperimentSetupForm,
                      LayoutConfigCheckbox, SampleInfoForm)
@@ -25,11 +25,19 @@ exp_pages = Blueprint(
 
 @exp_pages.route('/exp_settings', methods=('GET', 'POST'))
 def experiment_settings():
-    exp_settings_form = ExperimentSettingsForm()
+    config = warehouse.get().get().config.copy()
+    for key, val in config.items():
+        if not isinstance(val, (str, float, int)):
+            from io import StringIO
+            s = StringIO()
+            yaml.dump(val, s)
+            s.seek(0)
+            config[key] = ''.join(s.readlines())
+    settings_form = ExperimentSettingsForm(config)
     samples_info_form = SampleInfoForm()
     return render_template(
         'exp_settings.html',
-        exp_settings_form=exp_settings_form,
+        settings_form=settings_form,
         samples_info_form=samples_info_form,
     )
 
@@ -39,20 +47,38 @@ def experiment_settings():
 @exp_pages.route('/exp_pages/<string:project>', defaults={'experiment': None})
 @exp_pages.route('/exp_pages/<string:project>/<string:experiment>')
 def show_exp_cards(project: str = None, experiment: str = None):
-    project = 'MagR'
-    experiment = 'SSRF-SAXS-201805'
-    setup_files = warehouse.get_all_setup(project, 'SSRF-SAXS-201805')
-    prj_exp_run_list = [{
-        'project': 'MagR',
-        'experiment': 'SSRF-SAXS-201805',
-        'run': os.path.basename(os.path.dirname(filepath))
-    } for filepath in setup_files]
-    exp_setup_list = [parse_yaml(filepath) for filepath in setup_files]
+    # TODO and FIXME: need a better way to set project and experiment
+    # FIXME: only run with one project
+    if project is None:
+        all_projects = warehouse.get_name_projects()
+        if not all_projects:
+            return "Sorry. No projects found."
+        else:
+            prj = all_projects[0]
+
+    if experiment is None:
+        all_experiments = warehouse.get_name_experiments(prj)
+
+    exp_run_list = []
+    for exp in all_experiments:
+        exp_dict = {
+            'name': exp,
+            'description': warehouse.get_parameter(prj, exp, 'description'),
+        }
+        setup_files = warehouse.get_all_setup(prj, exp)
+        per_dict_list = [{
+            'project': prj,
+            'experiment': exp,
+            'run': os.path.basename(os.path.dirname(filepath))
+        } for filepath in setup_files]
+        run_setup_list = [parse_yaml(filepath) for filepath in setup_files]
+        run_table_list=enumerate(zip(per_dict_list, run_setup_list))
+        exp_run_list.append((exp_dict, run_table_list))
+
     return render_template(
         'exp_cards.html',
-        project='MagR',
-        experiment='SSRF-SAXS-201805',
-        exp_table_list=enumerate(zip(prj_exp_run_list, exp_setup_list)),
+        project=prj,
+        exp_run_list=exp_run_list,
     )
 
 
@@ -80,14 +106,14 @@ def individual_page(project: str, experiment: str, run: str):
 
     config_file = os.path.join(dir_path, 'config.yml')
     if os.path.exists(config_file):
-        exp_config = parse_yaml(config_file)
-        if 'layouts' not in exp_config:
-            exp_config['layouts'] = ()
+        run_config = parse_yaml(config_file)
+        if 'layouts' not in run_config:
+            run_config['layouts'] = ()
     else:
-        exp_config = {'layouts': ()}
+        run_config = {'layouts': ()}
     checkbox_prefix = 'checkbox'
     layouts_checkbox = LayoutConfigCheckbox(
-        exp_config['layouts'], prefix=checkbox_prefix)
+        run_config['layouts'], prefix=checkbox_prefix)
 
     # process submit action
     if setup_form.validate_on_submit():
@@ -108,15 +134,16 @@ def individual_page(project: str, experiment: str, run: str):
                 key = prefix_key.split('%s-' % checkbox_prefix)[1]
             if key not in ('csrf_token', 'generate'):
                 curr_layouts.append(key)
-        exp_config['layouts'] = curr_layouts
-        dump_yaml(exp_config, config_file)
+        curr_layouts.sort(key=sort_seq)  # sort sequence of graphs
+        run_config['layouts'] = curr_layouts
+        dump_yaml(run_config, config_file)
         # TODO: reset_exp(run)
         return redirect(url_for('.individual_page', **prj_exp_run))
 
     # create info for rendering
-    if exp_config['layouts']:
+    if run_config['layouts']:
         show_dashboard = True
-        selected_graph = exp_config['layouts']
+        selected_graph = run_config['layouts']
     else:
         show_dashboard = False
         dashboard_params = ()

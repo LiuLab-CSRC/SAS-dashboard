@@ -21,10 +21,17 @@ def create_app(flask_config=None):
     # app = Flask(__name__.split('.')[0], instance_relative_config=True)
 
     secret_key = ''.join((choice(ascii_letters) for _ in range(10)))
-    default_config = {'CSRF_ENABLED': True, 'SECRET_KEY': secret_key}
+    default_config = {
+        'DEBUG': True,
+        'CSRF_ENABLED': True,
+        'SECRET_KEY': secret_key,
+    }
     app.config.from_mapping(default_config)
     if flask_config is None:
-        app.config.from_pyfile('config.py')
+        try:
+            app.config.from_pyfile('config.py')
+        except FileNotFoundError:
+            pass
     else:
         app.config.from_object(flask_config)
     app.url_map.strict_slashes = False

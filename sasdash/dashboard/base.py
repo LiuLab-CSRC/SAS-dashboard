@@ -7,7 +7,12 @@ from flask import url_for
 
 from sasdash.webapp.app import flask_app
 
-DASH_URL_BASE = '/dashboard'
+# Error: dash.exceptions.InvalidConfig:routes_pathname_prefixneeds to end with `/`
+# https://github.com/plotly/dash/issues/359
+# since Dash 0.25.0:
+# https://github.com/plotly/dash/blob/master/CHANGELOG.md#0250---2018-08-14
+# change log: `requests/routes_pathname_prefix` must starts and end with `/`.
+DASH_URL_BASE = '/dashboard/'
 dash_app = dash.Dash(
     __name__, server=flask_app, url_base_pathname=DASH_URL_BASE)
 # flask_app = dash_app.server

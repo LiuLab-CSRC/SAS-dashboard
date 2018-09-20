@@ -2,17 +2,24 @@ from __future__ import print_function, division, absolute_import
 
 import os
 import glob
+from copy import deepcopy
 from functools import lru_cache
+from collections import Iterable
 
-from sasdash.saslib import sasio
-from sasdash.saslib import image
-from sasdash.utils import parse_yaml
+import numpy as np
+
+from sasdash.saslib import sasio, image, cormap
+from sasdash.utils import parse_yaml, to_basic_type
 
 
 class Experiment(object):
     def __init__(self, config, name=None, **kwargs):
         self._config = config
+        if 'description' not in self._config:
+            self._config['description'] = 'Description, comments or summary for this experiment'
+
         self._name = name
+
         # check essential parameter
         self._extensions = {
             'subtracted_files': '.dat',
@@ -36,14 +43,23 @@ class Experiment(object):
 
         # search root_path
         self._root_path = self._config['root_path']
-        self._registered_setup = []
+        self._registered_setup = {}
         self._registered_dir = {}
+
+        if isinstance(self._root_path, str):
+            self._search_run_dir(self._root_path)
+        elif isinstance(self._root_path, Iterable):
+            for each in self._root_path:
+                self._search_run_dir(each)
+
+    def _search_run_dir(self, dir_path):
         # TODO: improve this if os.walk() costs too much time.
-        for path, _, files in os.walk(self._root_path):
+        for path, _, files in os.walk(dir_path):
             for each_file in files:
                 if each_file.lower() == 'setup.yml':
-                    self._registered_setup.append(os.path.join(path, each_file))
                     dir_name = os.path.basename(path)
+                    setup_file = os.path.join(path, each_file)
+                    self._registered_setup[dir_name] = setup_file
                     self._registered_dir[dir_name] = path
 
     @property
@@ -51,11 +67,28 @@ class Experiment(object):
         return self._name
 
     @property
+    def config(self):
+        return self._config
+
+    @property
     def registered_setup(self):
         return self._registered_setup
 
+    def get_config_parameter(self, run, key):
+        # FIXME: undefined method (if config.yml doesn't exist?)
+        config_file = os.path.join(self._registered_dir[run], 'config.yml')
+        config_dict = parse_yaml(config_file)
+        return config_dict.get(key, None)
+
+    def get_setup_parameter(self, run, key):
+        setup = self.registered_setup[run]
+        setup_dict = parse_yaml(setup)
+        return setup_dict.get(key, None)
+
+    @lru_cache()
     def get_prev_next(self, run_name):
         all_run = list(self._registered_dir.keys())
+        all_run.sort()
         idx = all_run.index(run_name)
         if idx == 0:
             return None, all_run[1]
@@ -67,22 +100,17 @@ class Experiment(object):
     def get_dir_path(self, run_name):
         return self._registered_dir[run_name]
 
-    @lru_cache()
-    def get_sasprofile(self, run_name):
-        pattern = os.path.join(self._registered_dir[run_name],
-                               self._file_subdir['subtracted_files'],
-                               '*%s' % self._file_ext['subtracted_files'])
-        dat_files = glob.glob(pattern)
-        dat_files.sort()
-        return [sasio.load_dat(f) for f in dat_files]  # sasm_list
+    def get_parameter(self, key):
+        return self._config.get(key)
 
+    # ==================== Data function ============================ #
     def get_files(self, run_name, file_type):
         """Return full path of files as a list.
 
         Parameters
         ----------
         run_name : str
-            registered sub directory name
+            registered directory name of run
         file_type : str
             option - ['subtracted_files', 'gnom_files', 'image_files']
 
@@ -108,10 +136,154 @@ class Experiment(object):
         #     raise ValueError('No files found.')
         return files
 
+    # =============== 1D Profile ==================================== #
+    @lru_cache()
+    def get_sasprofile(self, run_name):
+        pattern = os.path.join(self._registered_dir[run_name],
+                               self._file_subdir['subtracted_files'],
+                               '*%s' % self._file_ext['subtracted_files'])
+        profile_files = glob.glob(pattern)
+        profile_files.sort()
+        return [sasio.load_dat(f) for f in profile_files]  # sasm_list
+
+    @lru_cache()
+    def get_gnom(self, run_name):
+        pattern = os.path.join(self._registered_dir[run_name],
+                               self._file_subdir['gnom_files'],
+                               '*%s' % self._file_ext['gnom_files'])
+        gnom_files = glob.glob(pattern)
+        gnom_files.sort()
+        return [sasio.load_out(f) for f in gnom_files]  # sasm_list
+
+    # ============== Image related ================================== #
+    @lru_cache()
+    def get_boxed_mask(self, run_name):
+        raise NotImplementedError()
+
+    def get_sasimage(self, run, image_fname):
+        raise NotImplementedError()
+
+    # =============== CorMap Heatmap ================================ #
+    def get_cormap_heatmap(self, run_name, heatmap_type='adj Pr(>C)'):
+        """Return CorMap heatmap.
+
+        Parameters
+        ----------
+        run_name : str
+            registered directory name of run
+        heatmap_type : str
+            options 'C', 'Pr(>C)', 'adj Pr(>C)'
+
+        Returns
+        -------
+        np.ndarray
+            2D matrix of CorMap heatmap
+        """
+        filelist = self.get_files(run_name, 'subtracted_files')
+        heatmap = cormap.calc_cormap_heatmap(filelist)
+        return heatmap[heatmap_type]
+
 
 class PrimusExperiment(Experiment):
-    def __init__(self, config_file, name=None, **kwargs):
-        super(PrimusExperiment, self).__init__(config_file, **kwargs)
+    def __init__(self, config, name=None, **kwargs):
+        super(PrimusExperiment, self).__init__(config, **kwargs)
+
+        # general config (image center)
+        self._default_box_radius = 150
+
+        # generate cfg settings
+        # TODO: if raw_cfg is missing?
+        if 'raw_cfg' not in self._config:
+            raise ValueError('No raw_cfg specified in experiment config file')
+        self._raw_cfg = deepcopy(self._config['raw_cfg'])
+
+        # check config
+        minimal_config = (
+            'cfg_path',
+            'mask_npy',
+            'MaskDimension',
+            'Xcenter',
+            'Ycenter',
+        )
+        for cfg_name, cfg_dict in self._raw_cfg.items():
+            if cfg_dict is not None:
+                for expected in minimal_config:
+                    if expected not in cfg_dict:
+                        raise ValueError("no '{}' in {} configuration.".format(expected, cfg_name))
+
+                # convert '(111, 222)' str to tuple (111, 222)
+                cfg_dict['MaskDimension'] = tuple(
+                    map(to_basic_type,
+                        cfg_dict['MaskDimension'].strip('()').split(','))
+                )
+
+                cfg_dict['xy_center'] = (cfg_dict['Xcenter'], cfg_dict['Ycenter'])
+                cfg_dict['rc_center'] = (
+                    cfg_dict['MaskDimension'][0] - cfg_dict['Ycenter'],
+                    cfg_dict['Xcenter']
+                )
+
+                cfg_dict['boxed_mask'] = image.boxslice(
+                    np.load(cfg_dict['mask_npy']),
+                    cfg_dict['rc_center'],
+                    self._default_box_radius,
+                )
+
+                cfg_dict['boxed_rc_center'] = tuple(
+                    min(c, self._default_box_radius)
+                    for c in cfg_dict['rc_center']
+                )
+            else:
+                self._raw_cfg[cfg_name] = {}
+
+        all_raw_cfg_names = list(self._raw_cfg.keys())
+        all_raw_cfg_names.sort()
+
+        self._default_raw_cfg = all_raw_cfg_names[-1]
+
+        # x_center = int(self._raw_simulator.get_raw_settings_value('Xcenter'))
+        # y_center = int(self._raw_simulator.get_raw_settings_value('Ycenter'))
+        # image_dim = tuple(
+        #     int(v) for v in self._raw_simulator.get_raw_settings_value(
+        #         'MaskDimension'))
+
+        # col_center = x_center
+        # row_center = image_dim[0] - y_center
+        # self.center = [row_center, col_center]
+        # self.radius = 150
+
+        # mask = self._raw_simulator.get_raw_settings_value('BeamStopMask')
+        # if mask is None:
+        #     mask = self._raw_simulator.get_raw_settings_value('Masks')[
+        #         'BeamStopMask']
+        # self.boxed_mask = image.boxslice(mask, self.center, self.radius)
+
+    def get_raw_cfg(self, run_name):
+        raw_cfg_name = self.get_setup_parameter(run_name, 'raw_cfg')
+        if raw_cfg_name is not None:
+            raw_cfg_name = os.path.basename(os.path.splitext(raw_cfg_name)[0])
+        else:
+            raw_cfg_name = self._default_raw_cfg
+        return self._raw_cfg[raw_cfg_name]
+
+    @lru_cache()
+    def get_raw_cfg_param(self, run_name, key):
+        raw_cfg = self.get_raw_cfg(run_name)
+        return raw_cfg.get(key)
+
+    def get_sasimage(self, run, image_fname):
+        image_filepath = os.path.join(self._root_path, run,
+                                      self._ImageFileDir, image_fname)
+
+        rc_center = self.get_raw_cfg_param(run, 'rc_center')
+
+        img = image.boxslice(
+            sasio.load_pilatus_image(image_filepath),
+            rc_center,
+            self._default_box_radius,
+        ) * self.get_raw_cfg_param(run, 'boxed_mask')
+
+        return img
 
 
 class Playground(Experiment):
@@ -131,27 +303,32 @@ class Project(object):
     def name(self):
         return self._proj_name
 
-    def append_experiment(self, config_file, name=None):
+    def get(self, experiment=None):
+        if experiment is None:  # remove this
+            return tuple(self._exp_instance.values())[0]
+        else:
+            return self._exp_instance.get(experiment)
+
+    def get_name_experiments(self):
+        return list(self._exp_instance.keys())
+
+    def append_experiment(self, config_file, name=None, typ='SSRF'):
         config = parse_yaml(config_file)
         if name is not None:
             pass
         elif 'name' in config:
-            name = config.name
+            name = config['name']
+        elif 'experiment_name' in config:
+            name = config['experiment_name']
         else:
             name = os.path.basename(os.path.splitext(config_file)[0])
         self._exp_instance[name] = PrimusExperiment(config, name=name)
 
     def get_all_setup(self, experiment):
-        return self._exp_instance[experiment].registered_setup
-
-    def get_dir_path(self, experiment, run):
-        return self._exp_instance[experiment].get_dir_path(run)
-
-    def get_sasprofile(self, experiment, run):
-        return self._exp_instance[experiment].get_sasprofile(run)
+        return self.get(experiment).registered_setup.values()
 
     def get_prev_next(self, experiment, run):
-        return self._exp_instance[experiment].get_prev_next(run)
+        return self.get(experiment).get_prev_next(run)
 
 
 class Warehouse(object):
@@ -160,126 +337,56 @@ class Warehouse(object):
         self._exp_instance = {'playground': Playground()}
         self._prj_instance = {}
 
+    def get(self, project=None):
+        if project is None:  # FIXME: remove this
+            return tuple(self._prj_instance.values())[0]
+        else:
+            return self._prj_instance.get(project)
+
+
+    def get_name_projects(self):
+        return list(self._prj_instance.keys())
+
+    def get_name_experiments(self, project):
+        return self.get(project).get_name_experiments()
+
+    def get_parameter(self, project, experiment, key):
+        return self.get(project).get(experiment).get_parameter(key)
+
     def append_project(self, name):
-        self._prj_instance[name] = Project(name)
+        if name not in self._prj_instance:
+            self._prj_instance[name] = Project(name)
 
     def append_experiment(self, project, config_file, name=None):
-        self._prj_instance.get(project).append_experiment(config_file, name)
-
-    def get_all_setup(self, project, experiment):
-        return self._prj_instance.get(project).get_all_setup(experiment)
-
-    def get_dir_path(self, project, experiment, run):
-        return self._prj_instance.get(project).get_dir_path(experiment, run)
-
-    def get_sasprofile(self, project, experiment, run):
-        return self._prj_instance.get(project).get_sasprofile(experiment, run)
+        self.get(project).append_experiment(config_file, name)
 
     def get_prev_next(self, project, experiment, run):
-        return self._prj_instance.get(project).get_prev_next(experiment, run)
+        return self.get(project).get_prev_next(experiment, run)
+
+    def get_all_setup(self, project, experiment):
+        return self.get(project).get_all_setup(experiment)
+
+    def get_dir_path(self, project, experiment, run):
+        return self.get(project).get(experiment).get_dir_path(run)
+
+    # =================== dashboard data ============================ #
+    def get_sasprofile(self, project, experiment, run):
+        return self.get(project).get(experiment).get_sasprofile(run)
+
+    def get_gnom(self, project, experiment, run):
+        return self.get(project).get(experiment).get_gnom(run)
+
+    def get_raw_cfg_param(self, project, experiment, run, key):
+        return self.get(project).get(experiment).get_raw_cfg_param(run, key)
+
+    def get_files(self, project, experiment, run, file_type):
+        return self.get(project).get(experiment).get_files(run, file_type)
+
+    def get_sasimage(self, project, experiment, run, image_fname):
+        return self.get(project).get(experiment).get_sasimage(run, image_fname)
+
+    def get_cormap_heatmap(self, project, experiment, run, heatmap_type):
+        return self.get(project).get(experiment).get_cormap_heatmap(run, heatmap_type)
 
 
 warehouse = Warehouse()
-warehouse.append_project('projname')
-warehouse.append_experiment(
-    'projname', r'experiment_config.yml',
-    'expname')
-
-
-class Simulator():
-    _CACHED_ANALYSES = [
-        'sasimage',
-        'cormap',
-        'cormap_heatmap',
-        'sasprofile',
-        'series_analysis',
-        'gnom',
-        'subtracted_files',
-        'gnom_files',
-        'image_files',
-    ]
-
-    def __init__(self):
-        # FIXME: set RAW cfg path
-        cfg_path = None
-        self._raw_simulator = RAWSimulator(cfg_path)
-
-        self._warehouse = {key: {} for key in self._CACHED_ANALYSES}
-        self._root_dir = None
-
-        x_center = int(self._raw_simulator.get_raw_settings_value('Xcenter'))
-        y_center = int(self._raw_simulator.get_raw_settings_value('Ycenter'))
-        image_dim = tuple(
-            int(v) for v in self._raw_simulator.get_raw_settings_value(
-                'MaskDimension'))
-
-        col_center = x_center
-        row_center = image_dim[0] - y_center
-        self.center = [row_center, col_center]
-        self.radius = 150
-
-        mask = self._raw_simulator.get_raw_settings_value('BeamStopMask')
-        if mask is None:
-            mask = self._raw_simulator.get_raw_settings_value('Masks')[
-                'BeamStopMask']
-        self.boxed_mask = image.boxslice(mask, self.center, self.radius)
-
-    def get_gnom(self, exp):
-        if exp not in self._warehouse['gnom']:
-            gnom_files = self.get_files(exp, 'gnom_files')
-            self._warehouse['gnom'][exp] = self._raw_simulator.loadIFTMs(
-                gnom_files)
-        return self._warehouse['gnom'][exp]
-
-    def get_sasprofile(self, exp):
-        if exp not in self._warehouse['sasprofile']:
-            sasm_files = self.get_files(exp, 'subtracted_files')
-            self._warehouse['sasprofile'][exp] = self._raw_simulator.loadSASMs(
-                sasm_files)
-        return self._warehouse['sasprofile'][exp]
-
-    def load_image(self, image_file):
-        with Image.open(image_file) as opened_image:
-            image = image.boxslice(
-                np.fliplr(np.asarray(opened_image, dtype=float)),
-                self.center,
-                self.radius,
-            ) * self.boxed_mask
-        return image
-
-    def get_sasimage(self, exp, image_fname):
-        if exp not in self._warehouse['sasimage']:
-            self._warehouse['sasimage'][exp] = {}
-        if image_fname not in self._warehouse['sasimage'][exp]:
-            image_file_path = os.path.join(self._root_dir, exp,
-                                           self._ImageFileDir, image_fname)
-            self._warehouse['sasimage'][exp][image_fname] = self.load_image(
-                image_file_path)
-        return self._warehouse['sasimage'][exp][image_fname]
-
-    def get_cormap_heatmap(self, exp, heatmap_type):
-        """Return CorMap heatmap.
-
-        Parameters
-        ----------
-        exp : [type]
-            [description]
-        heatmap_type : str
-            options 'C', 'Pr(>C)', 'adj Pr(>C)'
-        Returns
-        -------
-        np.ndarray
-            2D matrix of CorMap heatmap
-        """
-        if exp not in self._warehouse['cormap_heatmap']:
-            self._warehouse['cormap_heatmap'][exp] = self.calc_cormap_heatmap(
-                exp)
-        return self._warehouse['cormap_heatmap'][exp][heatmap_type]
-
-    def reset_exp(self, exp: int):
-        for key in self._CACHED_ANALYSES:
-            if exp in self._warehouse[key]:
-                self._warehouse[key].pop(exp)
-
-
-# raw_simulator = Simulator()
