@@ -38,23 +38,28 @@ def boxslice(array, center, radius=150):
             'length of center must be the same with dimension of array')
     if np.any(np.asarray(array.shape) - np.asarray(center) < 0):
         raise ValueError('center is out of box.')
-    slicer = [
+    # FutureWarning:
+    # Using a non-tuple sequence for multidimensional indexing is deprecated;
+    # use `arr[tuple(seq)]` instead of `arr[seq]`. In the future this will be
+    # interpreted as an array index, `arr[np.array(seq)]`, which will result
+    # either in an error or a different result.
+    slicer = tuple(
         slice(
             np.maximum(curr_center - radius, 0, dtype=int),
             np.minimum(curr_center + radius, max_len, dtype=int),
         ) for curr_center, max_len in zip(center, array.shape)
-    ]
+    )
     return array[slicer]
 
 
-def subtract_radial_average(img, center, mask=None):
+def subtract_radial_average(img, rc_center, mask=None):
     """Let image subtract its radial average matrix.
 
     Parameters
     ----------
     img : numpy.ndarray
         2D matrix of input image
-    center : tuple of int
+    rc_center : tuple of int
         (row, col) center of image matrix
     mask : numpy.ndarray, optional
         mask for image. 1 means valid area, 0 means masked area.
@@ -66,15 +71,15 @@ def subtract_radial_average(img, center, mask=None):
         return residual image.
     """
     assert img.ndim == 2, 'Wrong dimension for image.'
-    assert len(center) == 2, 'Wrong dimension for center.'
+    assert len(rc_center) == 2, 'Wrong dimension for center.'
     if mask is not None:
         masked_img = img * mask
     else:
         masked_img = img
-    center = np.round(center)
+    rc_center = np.round(rc_center)
     meshgrids = np.indices(img.shape)  # return (xx, yy)
     # eq: r = sqrt( (x - x_center)**2 + (y - y_center)**2 + (z - z_center)**2 )
-    r = np.sqrt(sum(((grid - c)**2 for grid, c in zip(meshgrids, center))))
+    r = np.sqrt(sum(((grid - c)**2 for grid, c in zip(meshgrids, rc_center))))
     r = np.round(r).astype(np.int)
 
     total_bin = np.bincount(r.ravel(), masked_img.ravel())

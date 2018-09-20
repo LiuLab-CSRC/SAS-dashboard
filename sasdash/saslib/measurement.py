@@ -149,7 +149,7 @@ class SASM(Base):
 class IFTM(Base):
     """Inverse Fourier Tranform Measurement (IFTM)"""
 
-    def __init__(self, r, pr, error, q_orig, i_orig, err_orig, i_fit):
+    def __init__(self, r, pr, error, q_orig, i_orig, err_orig, i_fit, q_extrap, i_extrap, params):
         self._raw_r = self._r = np.array(r)
         self._raw_pr = self._pr = np.array(pr)
         self._raw_error = self._error = np.array(error)
@@ -157,6 +157,14 @@ class IFTM(Base):
         self._raw_i_orig = self._i_orig = np.array(i_orig)
         self._raw_err_orig = self._err_orig = np.array(err_orig)
         self._raw_i_fit = self._i_fit = np.array(i_fit)
+
+        self._raw_q_extrap = self._q_extrap = np.array(q_extrap)
+        self._raw_i_extrap = self._i_extrap = np.array(i_extrap)
+
+        self._parameters = params.copy()
+
+    def _update(self):
+        pass
 
     @property
     def r(self):
@@ -181,6 +189,17 @@ class IFTM(Base):
     @property
     def err_orig(self):
         return self._err_orig
+
+    @property
+    def q_extrap(self):
+        return self._q_extrap
+
+    @property
+    def i_extrap(self):
+        return self._i_extrap
+
+    def get_parameter(self, key, default=None):
+        return self._parameters.get(key, default)
 
     def normalized_pr(self):
         area = np.trapz(self._pr, x=self._r)

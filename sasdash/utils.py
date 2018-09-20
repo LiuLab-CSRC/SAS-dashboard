@@ -10,7 +10,7 @@ from difflib import SequenceMatcher
 from functools import reduce
 
 from ruamel.yaml import YAML
-yaml = YAML()
+yaml = YAML(typ='rt')
 
 
 def parse_yaml(yaml_file):
@@ -50,6 +50,16 @@ def find_atsas_package():
     pass
 
 
+def unicodify(text):
+    # for Python 3
+    if text and isinstance(text, bytes):
+        import chardet
+        encoding = chardet.detect(text)['encoding']
+        return text.decode(encoding)
+    else:
+        return text
+
+
 def run_system_command(command_string, shell=False):
     """Function used to run the system command and return the log"""
     if shell:
@@ -61,12 +71,12 @@ def run_system_command(command_string, shell=False):
         shell=shell,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        encoding='utf-8',
+        # encoding='utf-8',
     )
     output, error = process.communicate()  # get the log.
     if error is not None:
-        print(error)
-    return output
+        print('Error:', unicodify(error))
+    return unicodify(output)
 
 
 def str2bool(param):

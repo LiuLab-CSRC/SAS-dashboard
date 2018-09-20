@@ -1,5 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
+import os.path
 import re
 
 import numpy as np
@@ -34,7 +35,8 @@ def get_datcmp_info(scattering_curve_files):
     --------
     >>>  datcmp_data = get_datcmp_info("saxs_files.00*.dat")
     """
-    cmd = "datcmp {}".format(scattering_curve_files)
+    cmd = r'datcmp {}'.format(scattering_curve_files)
+
     log = run_system_command(cmd, shell=True)
     # define a dictionary to store the data produced from DATCMP - this
     # value will be overwritten.
@@ -65,8 +67,8 @@ def calc_cormap_heatmap(file_list):
     # heatmap_type options: 'C', 'Pr(>C)', 'adj Pr(>C)'
     # file_list = self.get_files(exp, 'subtracted_files')
     file_pattern = common_prefix(file_list)
+    scattering_curve_files = os.path.normpath('%s*' % file_pattern)
 
-    scattering_curve_files = '%s*' % file_pattern
     _, c_values, p_values, adjp_values = get_datcmp_info(
         scattering_curve_files)
 
